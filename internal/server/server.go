@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/Deichindianer/m/internal/feed"
+	"github.com/Deichindianer/m/internal/hntop"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
+	"golang.org/x/net/context"
 )
 
 type Server struct {
@@ -15,19 +17,23 @@ type Server struct {
 	mux        *echo.Echo
 	logger     zerolog.Logger
 	museum     *feed.Museum
+	hnClient   *hntop.Client
 }
 
-func New() *Server {
+func New(ctx context.Context) *Server {
 	s := Server{}
 
 	s.logger = zerolog.New(os.Stdout)
 
 	mux := echo.New()
-	mux.GET("feeds/museum", s.ListFeedsInMuseum)
+	mux.GET("/feeds/museum", s.ListFeedsInMuseum)
 	mux.POST("/feeds/museum", s.RegisterFeedInMuseum)
+
+	mux.GET("hn/top", s.GetTopHNStories)
 
 	s.mux = mux
 	s.museum = feed.NewMuseum(time.Hour)
+	s.hnClient = hntop.New(ctx)
 	return &s
 }
 
@@ -70,4 +76,22 @@ func (s *Server) ListFeedsInMuseum(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
+}
+
+type GetHNTopStoriesResponse struct {
+	Stories []*hntop.HNStory `json:"stories"`
+}
+
+func (s *Server) GetTopHNStories(ctx echo.Context) error {
+	stories, err := s.hnClient.GetHNTop30Stories(ctx.Request().Context())
+	if err != nil {
+		s.logger.Error().Err(err).Msg("failed to get top stories from HN")
+		return echo.NewHTTPError(http.StatusInternalServerError)
+	}
+
+	resp := GetHNTopStoriesResponse{
+		Stories: stories,
+	}
+
+	return ctx.JSON(http.StatusOK, &resp)
 }
