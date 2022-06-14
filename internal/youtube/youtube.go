@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 
+	v1 "github.com/catouc/m/internal/m/v1"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 	yt "google.golang.org/api/youtube/v3"
@@ -12,17 +13,10 @@ import (
 
 type Client struct {
 	APIKey   string
-	Channels map[string][]Video
+	Channels map[string][]v1.YoutubeVideo
 }
 
-type Video struct {
-	ID          string
-	URL         string
-	ParsedTitle string
-	yt.SearchResultSnippet
-}
-
-func (c *Client) GetLatestVideosFromChannel(channelName string) ([]Video, error) {
+func (c *Client) GetLatestVideosFromChannel(channelName string) ([]*v1.YoutubeVideo, error) {
 	s, err := yt.NewService(context.Background(), option.WithAPIKey(os.Getenv("M_YT_API_KEY")))
 	if err != nil {
 		return nil, err
@@ -45,18 +39,19 @@ func (c *Client) GetLatestVideosFromChannel(channelName string) ([]Video, error)
 		return nil, err
 	}
 
-	videos := make([]Video, 0, len(vs.Items))
+	videos := make([]*v1.YoutubeVideo, 0, len(vs.Items))
 	for _, v := range vs.Items {
 		videoTitle, err := url.QueryUnescape(v.Snippet.Title)
 		if err != nil {
 			fmt.Printf("failed to query escape video: %s\n", err)
 		}
 
-		videos = append(videos, Video{
-			ID:                  v.Id.VideoId,
-			URL:                 fmt.Sprintf("https://youtube.com?v=%s", v.Id.VideoId),
-			ParsedTitle:         videoTitle,
-			SearchResultSnippet: *v.Snippet,
+		videos = append(videos, &v1.YoutubeVideo{
+			ID:          v.Id.VideoId,
+			URL:         fmt.Sprintf("https://youtube.com?v=%s", v.Id.VideoId),
+			Title:       videoTitle,
+			Description: v.Snippet.Description,
+			PublishedAt: v.Snippet.PublishedAt,
 		})
 	}
 

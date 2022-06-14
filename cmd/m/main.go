@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/Deichindianer/m/internal/youtube"
+	"github.com/catouc/m/internal/youtube"
 )
 
 func main() {

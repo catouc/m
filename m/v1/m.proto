@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package m.v1;
+
+option go_package = "github.com/catouc/m/internal/m/v1;mv1";
+
+message YoutubeChanneListRequest {
+  string channelName = 1;
+}
+
+message YoutubeChannelListResponse {
+  repeated YoutubeVideo videos = 1;
+}
+
+message YoutubeVideo {
+  string ID = 1;
+  string URL = 2;
+  string Title = 3;
+  string Description = 4;
+  string PublishedAt = 5;
+}
+
+service MService {
+  rpc ListVideosForChannel(YoutubeChanneListRequest) returns (YoutubeChannelListResponse) {}
+}

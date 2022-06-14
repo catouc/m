@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/Deichindianer/m/internal/feed"
-	"github.com/Deichindianer/m/internal/hntop"
+	"github.com/catouc/m/internal/feed"
+	"github.com/catouc/m/internal/hntop"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/context"
