@@ -4,11 +4,7 @@ package m.v1;
 
 option go_package = "github.com/catouc/m/internal/m/v1;mv1";
 
-message YoutubeChanneListRequest {
-  string channelName = 1;
-}
-
-message YoutubeChannelListResponse {
+message YoutubeVideoListResponse {
   repeated YoutubeVideo videos = 1;
 }
 
@@ -20,6 +16,37 @@ message YoutubeVideo {
   string PublishedAt = 5;
 }
 
+message YoutubeChanneListRequest {
+  string channelName = 1;
+}
+
+message YoutubeCategoryListRequest {
+  string category = 1;
+}
+
+message HNFrontpageResponse {
+  repeated HNStory stories = 1;	
+}
+
+message HNStory {
+  string Author = 1;
+  int32  ID = 2;
+  string Title = 3;
+  string URL = 4;
+}
+
+message ListNewBlogPostResponse {
+  repeated BlogPost posts = 1;
+}
+
+message BlogPost {
+  string author = 1;
+  string URL = 2;
+}
+
 service MService {
-  rpc ListVideosForChannel(YoutubeChanneListRequest) returns (YoutubeChannelListResponse) {}
+  rpc ListVideosForChannel(YoutubeChanneListRequest) returns (YoutubeVideoListResponse ) {}
+  rpc ListVideosForChannel(YoutubeCategoryListRequest) returns (YoutubeVideoListResponse ) {}
+  rpc GetHNFrontpage() returns (HNFrontpageResponse) {}
+  rpc ListNewBlogPosts() returns (ListNewBlogPostResponse) {} 
 }
