@@ -1,11 +1,14 @@
 package main
 
 import (
+	"errors"
 	"flag"
+	"fmt"
+	"github.com/bufbuild/connect-go"
+	"github.com/catouc/m/internal/hntop"
 	"log"
 	"net/http"
 
-	"github.com/bufbuild/connect-go"
 	v1 "github.com/catouc/m/internal/m/v1"
 	"github.com/catouc/m/internal/m/v1/mv1connect"
 	"github.com/catouc/m/internal/youtube"
@@ -24,24 +27,47 @@ func init() {
 
 type MServer struct {
 	ytClient *youtube.Client
+	hnClient *hntop.Client
 }
 
-func (ms *MServer) ListVideosForChannel(_ context.Context, req *connect.Request[v1.YoutubeChanneListRequest]) (*connect.Response[v1.YoutubeChannelListResponse], error) {
+func New() *MServer {
+	return &MServer{hnClient: hntop.New(context.Background())}
+}
+
+func (ms *MServer) ListVideosForChannel(_ context.Context, req *connect.Request[v1.YoutubeChanneListRequest]) (*connect.Response[v1.YoutubeVideoListResponse], error) {
 	v, err := ms.ytClient.GetLatestVideosFromChannel(req.Msg.ChannelName)
 	if err != nil {
 		return nil, err
 	}
 
-	response := connect.NewResponse(&v1.YoutubeChannelListResponse{
+	response := connect.NewResponse(&v1.YoutubeVideoListResponse{
 		Videos: v,
 	})
 	return response, nil
 }
 
-func main() {
-	ms := MServer{}
+func (ms *MServer) ListNewBlogPosts(_ context.Context, req *connect.Request[v1.ListNewBlogPostRequest]) (*connect.Response[v1.ListNewBlogPostResponse], error) {
+	return nil, errors.New("not implemented")
+}
 
-	path, handler := mv1connect.NewMServiceHandler(&ms)
+func (ms *MServer) ListVideosForCategory(_ context.Context, req *connect.Request[v1.YoutubeCategoryListRequest]) (*connect.Response[v1.YoutubeVideoListResponse], error) {
+	return nil, errors.New("not implemented")
+}
+
+func (ms *MServer) GetHNFrontpage(ctx context.Context, _ *connect.Request[v1.HNFrontpageRequest]) (*connect.Response[v1.HNFrontpageResponse], error) {
+	frontPage, err := ms.hnClient.GetHNTop30Stories(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(frontPage[0].URL)
+
+	response := connect.NewResponse(&v1.HNFrontpageResponse{Stories: frontPage})
+	return response, nil
+}
+
+func main() {
+	path, handler := mv1connect.NewMServiceHandler(New())
 	mux := http.NewServeMux()
 	mux.Handle(path, handler)
 

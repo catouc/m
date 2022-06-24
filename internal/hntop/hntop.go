@@ -3,6 +3,7 @@ package hntop
 import (
 	"encoding/json"
 	"fmt"
+	v1 "github.com/catouc/m/internal/m/v1"
 	"io"
 	"net/http"
 	"strconv"
@@ -51,7 +52,7 @@ type HNStory struct {
 	LastAccessed time.Time `json:"last_accessed"`
 }
 
-func (c *Client) GetHNTop30Stories(ctx context.Context) ([]*HNStory, error) {
+func (c *Client) GetHNTop30Stories(ctx context.Context) ([]*v1.HNStory, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiEndpoint+"topstories.json", nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct http request: %w", err)
@@ -78,7 +79,7 @@ func (c *Client) GetHNTop30Stories(ctx context.Context) ([]*HNStory, error) {
 		return nil, fmt.Errorf("failed to unmarshal bodyBytes into []int: %w", err)
 	}
 
-	stories := make([]*HNStory, 0)
+	stories := make([]*v1.HNStory, 0)
 	for _, id := range body[:30] {
 		story, err := c.GetHNStory(ctx, id)
 		if err != nil {
@@ -86,7 +87,16 @@ func (c *Client) GetHNTop30Stories(ctx context.Context) ([]*HNStory, error) {
 			continue
 		}
 
-		stories = append(stories, story)
+		fmt.Println(story.URL)
+
+		tmp := v1.HNStory{
+			Author: story.By,
+			ID:     int32(story.ID),
+			Title:  story.Title,
+			URL:    story.URL,
+		}
+
+		stories = append(stories, &tmp)
 	}
 
 	return stories, nil

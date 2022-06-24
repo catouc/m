@@ -4,4 +4,4 @@
 
 ## Install tools
 
-`./hack/install-tools
+`./hack/install-tools`
