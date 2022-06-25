@@ -37,6 +37,12 @@ message HNStory {
   string URL = 4;
 }
 
+message RegisterBlogRequest {
+  string feedURL = 1;
+}
+
+message RegisterBlogResponse {}
+
 message ListNewBlogPostRequest {}
 
 message ListNewBlogPostResponse {
@@ -44,13 +50,14 @@ message ListNewBlogPostResponse {
 }
 
 message BlogPost {
-  string author = 1;
-  string URL = 2;
+  string title = 1;
+  string content = 2;
 }
 
 service MService {
   rpc ListVideosForChannel(YoutubeChanneListRequest) returns (YoutubeVideoListResponse ) {}
   rpc ListVideosForCategory(YoutubeCategoryListRequest) returns (YoutubeVideoListResponse ) {}
   rpc GetHNFrontpage(HNFrontpageRequest) returns (HNFrontpageResponse) {}
-  rpc ListNewBlogPosts(ListNewBlogPostRequest) returns (ListNewBlogPostResponse) {} 
+  rpc ListNewBlogPosts(ListNewBlogPostRequest) returns (ListNewBlogPostResponse) {}
+  rpc RegisterBlog(RegisterBlogRequest) returns (RegisterBlogResponse) {}
 }

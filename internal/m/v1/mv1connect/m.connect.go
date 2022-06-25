@@ -31,6 +31,7 @@ type MServiceClient interface {
 	ListVideosForCategory(context.Context, *connect_go.Request[v1.YoutubeCategoryListRequest]) (*connect_go.Response[v1.YoutubeVideoListResponse], error)
 	GetHNFrontpage(context.Context, *connect_go.Request[v1.HNFrontpageRequest]) (*connect_go.Response[v1.HNFrontpageResponse], error)
 	ListNewBlogPosts(context.Context, *connect_go.Request[v1.ListNewBlogPostRequest]) (*connect_go.Response[v1.ListNewBlogPostResponse], error)
+	RegisterBlog(context.Context, *connect_go.Request[v1.RegisterBlogRequest]) (*connect_go.Response[v1.RegisterBlogResponse], error)
 }
 
 // NewMServiceClient constructs a client for the m.v1.MService service. By default, it uses the
@@ -63,6 +64,11 @@ func NewMServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ..
 			baseURL+"/m.v1.MService/ListNewBlogPosts",
 			opts...,
 		),
+		registerBlog: connect_go.NewClient[v1.RegisterBlogRequest, v1.RegisterBlogResponse](
+			httpClient,
+			baseURL+"/m.v1.MService/RegisterBlog",
+			opts...,
+		),
 	}
 }
 
@@ -72,6 +78,7 @@ type mServiceClient struct {
 	listVideosForCategory *connect_go.Client[v1.YoutubeCategoryListRequest, v1.YoutubeVideoListResponse]
 	getHNFrontpage        *connect_go.Client[v1.HNFrontpageRequest, v1.HNFrontpageResponse]
 	listNewBlogPosts      *connect_go.Client[v1.ListNewBlogPostRequest, v1.ListNewBlogPostResponse]
+	registerBlog          *connect_go.Client[v1.RegisterBlogRequest, v1.RegisterBlogResponse]
 }
 
 // ListVideosForChannel calls m.v1.MService.ListVideosForChannel.
@@ -94,12 +101,18 @@ func (c *mServiceClient) ListNewBlogPosts(ctx context.Context, req *connect_go.R
 	return c.listNewBlogPosts.CallUnary(ctx, req)
 }
 
+// RegisterBlog calls m.v1.MService.RegisterBlog.
+func (c *mServiceClient) RegisterBlog(ctx context.Context, req *connect_go.Request[v1.RegisterBlogRequest]) (*connect_go.Response[v1.RegisterBlogResponse], error) {
+	return c.registerBlog.CallUnary(ctx, req)
+}
+
 // MServiceHandler is an implementation of the m.v1.MService service.
 type MServiceHandler interface {
 	ListVideosForChannel(context.Context, *connect_go.Request[v1.YoutubeChanneListRequest]) (*connect_go.Response[v1.YoutubeVideoListResponse], error)
 	ListVideosForCategory(context.Context, *connect_go.Request[v1.YoutubeCategoryListRequest]) (*connect_go.Response[v1.YoutubeVideoListResponse], error)
 	GetHNFrontpage(context.Context, *connect_go.Request[v1.HNFrontpageRequest]) (*connect_go.Response[v1.HNFrontpageResponse], error)
 	ListNewBlogPosts(context.Context, *connect_go.Request[v1.ListNewBlogPostRequest]) (*connect_go.Response[v1.ListNewBlogPostResponse], error)
+	RegisterBlog(context.Context, *connect_go.Request[v1.RegisterBlogRequest]) (*connect_go.Response[v1.RegisterBlogResponse], error)
 }
 
 // NewMServiceHandler builds an HTTP handler from the service implementation. It returns the path on
@@ -129,6 +142,11 @@ func NewMServiceHandler(svc MServiceHandler, opts ...connect_go.HandlerOption) (
 		svc.ListNewBlogPosts,
 		opts...,
 	))
+	mux.Handle("/m.v1.MService/RegisterBlog", connect_go.NewUnaryHandler(
+		"/m.v1.MService/RegisterBlog",
+		svc.RegisterBlog,
+		opts...,
+	))
 	return "/m.v1.MService/", mux
 }
 
@@ -149,4 +167,8 @@ func (UnimplementedMServiceHandler) GetHNFrontpage(context.Context, *connect_go.
 
 func (UnimplementedMServiceHandler) ListNewBlogPosts(context.Context, *connect_go.Request[v1.ListNewBlogPostRequest]) (*connect_go.Response[v1.ListNewBlogPostResponse], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("m.v1.MService.ListNewBlogPosts is not implemented"))
+}
+
+func (UnimplementedMServiceHandler) RegisterBlog(context.Context, *connect_go.Request[v1.RegisterBlogRequest]) (*connect_go.Response[v1.RegisterBlogResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("m.v1.MService.RegisterBlog is not implemented"))
 }
