@@ -1,44 +1,35 @@
 package server
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/bufbuild/connect-go"
 	"github.com/catouc/m/internal/feed"
 	"github.com/catouc/m/internal/hntop"
+	v1 "github.com/catouc/m/internal/m/v1"
+	"github.com/catouc/m/internal/youtube"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/context"
 )
 
 type Server struct {
-	listenAddr string
-	mux        *echo.Echo
-	logger     zerolog.Logger
-	museum     *feed.Museum
-	hnClient   *hntop.Client
+	logger   zerolog.Logger
+	museum   *feed.Museum
+	hnClient *hntop.Client
+	ytClient *youtube.Client
 }
 
 func New(ctx context.Context) *Server {
-	s := Server{}
-
-	s.logger = zerolog.New(os.Stdout)
-
-	mux := echo.New()
-	mux.GET("/feeds/museum", s.ListFeedsInMuseum)
-	mux.POST("/feeds/museum", s.RegisterFeedInMuseum)
-
-	mux.GET("hn/top", s.GetTopHNStories)
-
-	s.mux = mux
-	s.museum = feed.NewMuseum(time.Hour)
-	s.hnClient = hntop.New(ctx)
-	return &s
-}
-
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+	return &Server{
+		logger:   zerolog.New(os.Stdout),
+		museum:   feed.NewMuseum(time.Hour),
+		hnClient: hntop.New(ctx),
+	}
 }
 
 type RegisterFeedInMuseumBody struct {
@@ -62,36 +53,34 @@ func (s *Server) RegisterFeedInMuseum(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusCreated)
 }
 
-type ListFeedsInMuseumResponse struct {
-	Feeds []string `json:"feeds"`
-}
-
-func (s *Server) ListFeedsInMuseum(ctx echo.Context) error {
-	resp := ListFeedsInMuseumResponse{
-		Feeds: make([]string, 0),
-	}
-
-	for key, _ := range s.museum.Feeds {
-		resp.Feeds = append(resp.Feeds, key)
-	}
-
-	return ctx.JSON(http.StatusOK, resp)
-}
-
-type GetHNTopStoriesResponse struct {
-	Stories []*hntop.HNStory `json:"stories"`
-}
-
-func (s *Server) GetTopHNStories(ctx echo.Context) error {
-	stories, err := s.hnClient.GetHNTop30Stories(ctx.Request().Context())
+func (s *Server) ListVideosForChannel(_ context.Context, req *connect.Request[v1.YoutubeChanneListRequest]) (*connect.Response[v1.YoutubeVideoListResponse], error) {
+	v, err := s.ytClient.GetLatestVideosFromChannel(req.Msg.ChannelName)
 	if err != nil {
-		s.logger.Error().Err(err).Msg("failed to get top stories from HN")
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return nil, err
 	}
 
-	resp := GetHNTopStoriesResponse{
-		Stories: stories,
+	response := connect.NewResponse(&v1.YoutubeVideoListResponse{
+		Videos: v,
+	})
+	return response, nil
+}
+
+func (s *Server) ListNewBlogPosts(_ context.Context, req *connect.Request[v1.ListNewBlogPostRequest]) (*connect.Response[v1.ListNewBlogPostResponse], error) {
+	return nil, errors.New("not implemented")
+}
+
+func (s *Server) ListVideosForCategory(_ context.Context, req *connect.Request[v1.YoutubeCategoryListRequest]) (*connect.Response[v1.YoutubeVideoListResponse], error) {
+	return nil, errors.New("not implemented")
+}
+
+func (s *Server) GetHNFrontpage(ctx context.Context, _ *connect.Request[v1.HNFrontpageRequest]) (*connect.Response[v1.HNFrontpageResponse], error) {
+	frontPage, err := s.hnClient.GetHNTop30Stories(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	return ctx.JSON(http.StatusOK, &resp)
+	fmt.Println(frontPage[0].URL)
+
+	response := connect.NewResponse(&v1.HNFrontpageResponse{Stories: frontPage})
+	return response, nil
 }
