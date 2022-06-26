@@ -15,19 +15,37 @@ import (
 	"golang.org/x/net/context"
 )
 
-type Server struct {
-	logger   zerolog.Logger
-	museum   *feed.Museum
-	hnClient *hntop.Client
-	ytClient *youtube.Client
+type Config struct {
+	MuseumConfig feed.Config `conf:"required" yaml:"museum"`
 }
 
-func New(ctx context.Context) *Server {
+type Server struct {
+	Config   Config
+	Logger   zerolog.Logger
+	Museum   *feed.Museum
+	HNClient *hntop.Client
+	YTClient *youtube.Client
+}
+
+func New(ctx context.Context, cfg Config) *Server {
 	return &Server{
-		logger:   zerolog.New(os.Stdout),
-		museum:   feed.NewMuseum(time.Hour),
-		hnClient: hntop.New(ctx),
+		Config:   cfg,
+		Logger:   zerolog.New(os.Stdout),
+		Museum:   feed.NewMuseum(time.Hour),
+		HNClient: hntop.New(ctx),
 	}
+}
+
+func (s *Server) Init() error {
+	s.Logger.Info().Msg("Initialising server")
+	s.Logger.Info().Msg("Initialising museum")
+	err := s.Museum.Init()
+	if err != nil {
+		return fmt.Errorf("failed to init museum: %w", err)
+	}
+	s.Logger.Info().Msg("Initialising museum done")
+
+	return nil
 }
 
 type RegisterFeedInMuseumBody struct {
@@ -35,9 +53,9 @@ type RegisterFeedInMuseumBody struct {
 }
 
 func (s *Server) RegisterBlog(ctx context.Context, req *connect.Request[v1.RegisterBlogRequest]) (*connect.Response[v1.RegisterBlogResponse], error) {
-	err := s.museum.Register(req.Msg.FeedURL)
+	err := s.Museum.Register(req.Msg.FeedURL)
 	if err != nil {
-		s.logger.Error().Err(err).Msg("failed to register feed")
+		s.Logger.Error().Err(err).Msg("failed to register feed")
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
@@ -45,7 +63,7 @@ func (s *Server) RegisterBlog(ctx context.Context, req *connect.Request[v1.Regis
 }
 
 func (s *Server) ListVideosForChannel(_ context.Context, req *connect.Request[v1.YoutubeChanneListRequest]) (*connect.Response[v1.YoutubeVideoListResponse], error) {
-	v, err := s.ytClient.GetLatestVideosFromChannel(req.Msg.ChannelName)
+	v, err := s.YTClient.GetLatestVideosFromChannel(req.Msg.ChannelName)
 	if err != nil {
 		return nil, err
 	}
@@ -62,10 +80,10 @@ func (s *Server) ListNewBlogPosts(_ context.Context, req *connect.Request[v1.Lis
 	// This is all based on the assumption that the items in the feed struct are ordered in desc order by published date
 	// to save us from iterating through the entire backlog of posts everytime.
 	posts := make([]*v1.BlogPost, 0)
-	for _, f := range s.museum.Feeds {
+	for _, f := range s.Museum.Feeds {
 		for _, i := range f.Items {
 			if i.PublishedParsed == nil {
-				s.logger.Error().
+				s.Logger.Error().
 					Str("BlogTitle", i.Title).
 					Str("PublishedString", i.Published).
 					Msg("PublishedParsed date of blog post is nil!")
@@ -90,7 +108,7 @@ func (s *Server) ListVideosForCategory(_ context.Context, req *connect.Request[v
 }
 
 func (s *Server) GetHNFrontpage(ctx context.Context, _ *connect.Request[v1.HNFrontpageRequest]) (*connect.Response[v1.HNFrontpageResponse], error) {
-	frontPage, err := s.hnClient.GetHNTop30Stories(ctx)
+	frontPage, err := s.HNClient.GetHNTop30Stories(ctx)
 	if err != nil {
 		return nil, err
 	}
