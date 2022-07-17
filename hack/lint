@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+buf lint --exclude-path vendor/ --exclude-path .direnv/
