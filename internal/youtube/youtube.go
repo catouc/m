@@ -47,8 +47,8 @@ func (c *Client) GetLatestVideosFromChannel(channelName string) ([]*v1.YoutubeVi
 		}
 
 		videos = append(videos, &v1.YoutubeVideo{
-			ID:          v.Id.VideoId,
-			URL:         fmt.Sprintf("https://youtube.com?v=%s", v.Id.VideoId),
+			Id:          v.Id.VideoId,
+			Url:         fmt.Sprintf("https://youtube.com?v=%s", v.Id.VideoId),
 			Title:       videoTitle,
 			Description: v.Snippet.Description,
 			PublishedAt: v.Snippet.PublishedAt,

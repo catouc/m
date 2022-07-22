@@ -3,12 +3,13 @@ package hntop
 import (
 	"encoding/json"
 	"fmt"
-	v1 "github.com/catouc/m/internal/m/v1"
 	"io"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
+
+	v1 "github.com/catouc/m/internal/m/v1"
 
 	"golang.org/x/net/context"
 )
@@ -91,9 +92,9 @@ func (c *Client) GetHNTop30Stories(ctx context.Context) ([]*v1.HNStory, error) {
 
 		tmp := v1.HNStory{
 			Author: story.By,
-			ID:     int32(story.ID),
+			Id:     int32(story.ID),
 			Title:  story.Title,
-			URL:    story.URL,
+			Url:    story.URL,
 		}
 
 		stories = append(stories, &tmp)

@@ -113,7 +113,7 @@ func (s *Server) GetHNFrontpage(ctx context.Context, _ *connect.Request[v1.HNFro
 		return nil, err
 	}
 
-	fmt.Println(frontPage[0].URL)
+	fmt.Println(frontPage[0].Url)
 
 	response := connect.NewResponse(&v1.HNFrontpageResponse{Stories: frontPage})
 	return response, nil
